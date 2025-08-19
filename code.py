@@ -1,47 +1,29 @@
 import cv2
-import numpy as np
+import matplotlib.pyplot as plt
+import os
 
-# Read and convert image to grayscale
-image = cv2.imread("lena5.jpg")
-gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-cv2.imshow("Grayscale", gray_img)
+folder_path = r"C:\Users\vrutt\Desktop\vruttant\dip\HISTOGRAM"
+image_name = "TOTA"
 
-print("\nOriginal grayscale matrix:\n", gray_img)
+# Automatically detect image with common extensions
+def find_image(base_name, folder="."):
+    for file in os.listdir(folder):
+        if file.startswith(base_name) and file.lower().endswith((".jpg", ".png", ".jpeg", ".bmp")):
+            return os.path.join(folder, file)
+    return None
 
-# Get image dimensions
-rows, cols = gray_img.shape
-total_pixels = rows * cols
+image_path = find_image(image_name, folder_path)
+if image_path is None:
+    raise FileNotFoundError(f"Image '{image_name}' not found in folder '{folder_path}'")
 
-# Flatten image to 1D
-flat_pixels = gray_img.flatten()
+img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+if img is None:
+    raise FileNotFoundError("Failed to read the image.")
 
-# Sort and get min/max
-sorted_pixels = np.sort(flat_pixels)
-min_pixel = sorted_pixels[0]
-max_pixel = sorted_pixels[-1]
+equalized_img = cv2.equalizeHist(img)
+resized_img = cv2.resize(equalized_img, (800, 600))
 
-# Get unique pixel values
-unique_vals = np.unique(flat_pixels)
-
-# Count pixel frequencies
-freq = [np.count_nonzero(flat_pixels == val) for val in unique_vals]
-
-# Compute cumulative distribution function (CDF)
-cdf = np.cumsum(freq)
-
-# Map old pixel values to new equalized values
-cdf_min = cdf[0]
-equalized_vals = np.round(((cdf - cdf_min) / (total_pixels - cdf_min)) * 255).astype(np.uint8)
-
-# Create mapping dictionary
-pixel_map = dict(zip(unique_vals, equalized_vals))
-
-# Apply mapping to get equalized image
-equalized_img = np.vectorize(pixel_map.get)(gray_img).astype(np.uint8)
-
-print("\nEqualized image matrix:\n", equalized_img)
-
-# Show results
-cv2.imshow("Histogram Equalized", equalized_img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+plt.imshow(resized_img, cmap='gray')
+plt.title("Histogram Equalized Image")
+plt.axis('off')
+plt.show()
